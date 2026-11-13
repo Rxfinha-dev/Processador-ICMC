@@ -704,6 +704,10 @@ void Model::processador()
       case SOUND: 
         play_note(reg[rx], reg[ry], reg[rz]);
         break;
+
+      case SNDN:    // Rx = frequencia (Hz), Ry = duracao (ms), Rz = forma de onda
+        play_note_async(reg[rx], reg[ry], reg[rz]);
+        break;
     
       case SUB:
         reg[rx] = reg[ry] - reg[rz]; // Subtracao sem Carry

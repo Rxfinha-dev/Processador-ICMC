@@ -105,6 +105,19 @@ void Beeper::beep(string wave, double freq, int duration){
     SDL_UnlockAudio();
 }
 
+// Descarta a nota que esta tocando (e as pendentes) e comeca a nova.
+void Beeper::replace(string wave, double freq, int duration){
+    BeepObject bo;
+    bo.freq = freq;
+    bo.wave_type = wave;
+    bo.samplesLeft = duration * FREQUENCY / 1000;
+
+    SDL_LockAudio();
+    beeps = queue<BeepObject>();
+    beeps.push(bo);
+    SDL_UnlockAudio();
+}
+
 void Beeper::wait(int time){
     int size;
     do {
@@ -125,30 +138,41 @@ void audio_callback(void *_beeper, Uint8 *_stream, int _length)
     beeper->generateSamples(stream, length);
 }
 
-// rx: frequency, ry: duration (ms), rz:wave_type
-void play_note (int rx, int ry, int rz) {
-    SDL_Init(SDL_INIT_AUDIO);
-    Beeper beeper;
-
-    std::string type;
-
+// rz: wave_type
+static std::string tipo_onda (int rz) {
     switch (rz) {
-    case 0:
-        type = "sine";
-        break;
     case 1:
-        type = "square";
-        break;
+        return "square";
     case 2:
-        type = "triangle";
-        break;
+        return "triangle";
     case 3:
-        type = "sawtooth";
-        break;    
+        return "sawtooth";
     default:
-        type = "sine";
-        break;
+        return "sine";
     }
-    beeper.beep(type, rx, ry);
+}
+
+// Um unico dispositivo de audio para SOUND e SNDN: abrir dois ao mesmo tempo falha.
+static Beeper& beeper_global () {
+    static bool iniciado = (SDL_Init(SDL_INIT_AUDIO) == 0);
+    static Beeper beeper;
+    (void) iniciado;
+    return beeper;
+}
+
+// Abre o audio ao iniciar o simulador: abrir leva centenas de ms e travaria a primeira nota.
+void inicia_audio () {
+    beeper_global();
+}
+
+// SOUND - rx: frequency, ry: duration (ms), rz:wave_type. Espera a nota terminar.
+void play_note (int rx, int ry, int rz) {
+    Beeper& beeper = beeper_global();
+    beeper.beep(tipo_onda(rz), rx, ry);
     beeper.wait(30);
+}
+
+// SNDN - mesmos operandos do SOUND, mas nao espera: troca a nota atual pela nova e retorna.
+void play_note_async (int rx, int ry, int rz) {
+    beeper_global().replace(tipo_onda(rz), rx, ry);
 }

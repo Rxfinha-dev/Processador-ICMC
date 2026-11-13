@@ -36,6 +36,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
+	inicia_audio();
 	Model *m = new Model(argv[1], argv[2]);
 	Controller *c = new Controller(m);
 
